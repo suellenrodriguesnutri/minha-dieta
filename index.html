@@ -97,15 +97,45 @@ label[for=peso],label[for=alt],.lab{text-align:center;color:var(--mut)}
 .cal button.sel{background:var(--g);color:var(--on)}
 .cal button.sel.tem::after{background:var(--on)}
 .cal button:disabled{opacity:.35;cursor:default}
+#auth label{font-weight:600;color:var(--ink)}
+.aviso{background:var(--warn);border-left:4px solid var(--o);border-radius:8px;padding:10px 12px;font-size:14px;margin:0 0 14px}
+.dica{font-size:14px;color:var(--mut);margin:12px 0 0;text-align:center}
+.dica a{color:var(--g);font-weight:700}
+.lnk{background:none;border:0;padding:0;color:var(--g);font-weight:700;text-decoration:underline;font-size:inherit}
+.btn:disabled{opacity:.6}
 </style>
 </head>
 <body>
 <main>
   <h1>Minha Dieta</h1>
+  <div id="auth" hidden>
+    <p class="sub" id="authSub">Entre com o e-mail que você usou na compra.</p>
+    <section class="card">
+      <div class="seg" role="tablist" aria-label="Acesso" id="modo"><button type="button" role="tab" data-m="entrar" class="on" aria-selected="true">Entrar</button><button type="button" role="tab" data-m="criar" aria-selected="false">Primeiro acesso</button></div>
+      <p class="aviso" id="authMsg" role="status" hidden></p>
+      <form id="fAuth" novalidate>
+        <label for="aEmail">E-mail da compra</label>
+        <input id="aEmail" type="email" autocomplete="username" inputmode="email" placeholder="seuemail@exemplo.com" required>
+        <label for="aSenha" style="margin-top:12px">Senha</label>
+        <input id="aSenha" type="password" autocomplete="current-password" placeholder="Sua senha" required>
+        <div id="boxSenha2" hidden>
+          <label for="aSenha2" style="margin-top:12px">Repita a senha</label>
+          <input id="aSenha2" type="password" autocomplete="new-password" placeholder="Digite a senha de novo">
+        </div>
+        <p class="err" id="authErr" role="alert" hidden></p>
+        <button class="btn" id="aBtn" type="submit" style="margin-top:16px">Entrar</button>
+      </form>
+      <p class="dica" id="dicaCriar" hidden>É sua primeira vez? Use o <b>mesmo e-mail da compra no Hotmart</b> e crie uma senha com pelo menos 6 caracteres.</p>
+      <p class="dica"><button type="button" class="lnk" id="esqueci">Esqueci minha senha</button></p>
+      <p class="dica" id="esqueciMsg" hidden>Fale comigo no Instagram <a href="https://www.instagram.com/suellenrodrigues.nutri/" target="_blank" rel="noopener">@suellenrodrigues.nutri</a> com o e-mail da sua compra. Eu libero para você criar uma senha nova em "Primeiro acesso".</p>
+    </section>
+  </div>
+
+  <div id="app" hidden>
   <p class="sub">Informe seu peso e sua altura e veja sua meta diária na hora.<br>Depois, faça o registro diário das suas refeições, seguindo suas calorias do dia e a distribuição dos macronutrientes (proteínas, carboidratos e gorduras).</p>
 
   <section class="card">
-    <div class="seg" role="radiogroup" aria-label="Objetivo"><button type="button" role="radio" data-o="e" class="on" aria-checked="true">Emagrecer</button><button type="button" role="radio" data-o="g" aria-checked="false">Ganhar massa muscular</button></div>
+    <div class="seg" id="objSeg" role="radiogroup" aria-label="Objetivo"><button type="button" role="radio" data-o="e" class="on" aria-checked="true">Emagrecer</button><button type="button" role="radio" data-o="g" aria-checked="false">Ganhar massa muscular</button></div>
     <span class="lab" id="sxl" style="margin-top:0">Sexo</span>
     <div class="seg sx" role="radiogroup" aria-labelledby="sxl"><button type="button" role="radio" data-s="f" aria-checked="false">Mulher</button><button type="button" role="radio" data-s="m" aria-checked="false">Homem</button></div>
     <div class="campos">
@@ -172,8 +202,9 @@ label[for=peso],label[for=alt],.lab{text-align:center;color:var(--mut)}
       <div id="lista"><span style="color:var(--mut)">Nada registrado ainda.</span></div>
     </section>
   </div>
+  </div>
 
-  <p class="foot">Estimativa geral para adultos, que não substitui acompanhamento individualizado.<br>Valores dos alimentos por 100 g, com base na TACO, na TBCA, no IBGE e no USDA.<br>Nutricionista Suellen Rodrigues · CRN-3 97171/P<br><span aria-hidden="true">📷</span> Instagram <a href="https://www.instagram.com/suellenrodrigues.nutri/" target="_blank" rel="noopener" style="color:var(--g);font-weight:700">@suellenrodrigues.nutri</a></p>
+  <p class="foot">Estimativa geral para adultos, que não substitui acompanhamento individualizado.<br>Valores dos alimentos por 100 g, com base na TACO, na TBCA, no IBGE e no USDA.<br>Nutricionista Suellen Rodrigues · CRN-3 97171/P<br><span aria-hidden="true">📷</span> Instagram <a href="https://www.instagram.com/suellenrodrigues.nutri/" target="_blank" rel="noopener" style="color:var(--g);font-weight:700">@suellenrodrigues.nutri</a><span id="contaBox" hidden><br>Conectada como <span id="contaEm"></span> · <button type="button" class="lnk" id="sair">Sair</button></span></p>
 </main>
 <script>
 const DB=`Arroz, integral, cozido|124|2.6|25.8|1
@@ -323,7 +354,7 @@ function render(){
   document.querySelectorAll('.sx button').forEach(b=>{const on=b.dataset.s===sexo;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
   $('#errs').hidden=!!sexo||!(peso&&alt);
   $('#meta').hidden=!ok; $('#diario').hidden=!ok;
-  document.querySelectorAll('.seg:not(.sx) button').forEach(b=>{const on=b.dataset.o===obj;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
+  document.querySelectorAll('#objSeg button').forEach(b=>{const on=b.dataset.o===obj;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
   if(!ok) return;
   const m=metaDe(peso);
   $('#mk').textContent=fmt(m.k); $('#mp').textContent=fmt(m.p); $('#mc').textContent=fmt(m.c); $('#ml').textContent=fmt(m.l);
@@ -347,7 +378,7 @@ function render(){
   $('#lista').innerHTML=L.length?REF.map((nome,r)=>{const it=L.map((e,i)=>({e,i})).filter(o=>(o.e.r||0)===r);const sub=it.reduce((s,o)=>s+o.e.k,0);return `<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-weight:700;color:var(--g);padding-bottom:4px"><span>${nome}</span><span>${fmt(sub)} kcal</span></div>`+(it.length?it.map(({e,i})=>`<div class="item"><div><b>${e.n}</b><small>${e.d} · P ${fmt(e.p,1)} g · C ${fmt(e.c,1)} g · G ${fmt(e.l,1)} g</small></div><div style="white-space:nowrap"><b>${fmt(e.k)}</b> kcal<button class="x" data-i="${i}" aria-label="Remover ${e.n}">×</button></div></div>`).join(''):'<div style="color:var(--mut);font-size:14px">Nada ainda</div>')+'</div>'}).join(''):'<span style="color:var(--mut)">Nada registrado ainda.</span>';
 }
 
-document.querySelector('.seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;obj=b.dataset.o;sv('obj',obj);render()});
+document.querySelector('#objSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;obj=b.dataset.o;sv('obj',obj);render()});
 document.querySelector('.sx').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sexo=b.dataset.s;sv('sexo',sexo);render()});
 $('#alt').addEventListener('input',e=>{
   const v=e.target.value.trim();let h=num(v);
@@ -394,10 +425,62 @@ $('#lista').addEventListener('click',e=>{
   dias[dia].splice(+b.dataset.i,1); sv('dias',dias); render();
 });
 $('#cal').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;dia=b.dataset.d;sel=null;$('#qtd').hidden=true;render()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkMes();render()}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkMes();render();verificar()}});
+
+// ---------- Acesso com e-mail e senha ----------
+let tk=ld('tk',null), modo='entrar';
+const MSG={outro_aparelho:'Sua conta foi acessada em outro celular. Para usar aqui, entre de novo (o outro celular será desconectado).',sem_acesso:'Seu acesso não está ativo. Fale com a Nutricionista Suellen no Instagram @suellenrodrigues.nutri.',invalido:'Entre novamente para continuar.'};
+function mostrar(logado){
+  $('#auth').hidden=logado; $('#app').hidden=!logado; $('#contaBox').hidden=!logado;
+  if(logado){$('#contaEm').textContent=ld('em','');render()}
+}
+function sair(motivo){
+  tk=null; sv('tk',null);
+  $('#authMsg').textContent=MSG[motivo]||''; $('#authMsg').hidden=!MSG[motivo];
+  setModo('entrar'); mostrar(false);
+}
+async function verificar(){
+  if(!tk) return;
+  try{
+    const r=await fetch('/api/sessao',{headers:{Authorization:'Bearer '+tk},cache:'no-store'});
+    if(r.status===401){const j=await r.json().catch(()=>({}));sair(j.motivo||'invalido')}
+  }catch(e){/* sem internet: continua usando normalmente */}
+}
+function setModo(m){
+  modo=m;
+  document.querySelectorAll('#modo button').forEach(b=>{const on=b.dataset.m===m;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+  $('#boxSenha2').hidden=m!=='criar'; $('#dicaCriar').hidden=m!=='criar';
+  $('#aSenha').autocomplete=m==='criar'?'new-password':'current-password';
+  $('#aSenha').placeholder=m==='criar'?'Crie uma senha (mínimo 6 caracteres)':'Sua senha';
+  $('#aBtn').textContent=m==='criar'?'Criar senha e entrar':'Entrar';
+  $('#authErr').hidden=true;
+}
+$('#modo').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setModo(b.dataset.m)});
+$('#esqueci').addEventListener('click',()=>{$('#esqueciMsg').hidden=!$('#esqueciMsg').hidden});
+$('#sair').addEventListener('click',()=>sair());
+$('#fAuth').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=$('#aEmail').value.trim(), senha=$('#aSenha').value, erro=t=>{$('#authErr').textContent=t;$('#authErr').hidden=false};
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erro('Informe um e-mail válido.');
+  if(!senha) return erro('Informe a senha.');
+  if(modo==='criar'){
+    if(senha.length<6) return erro('A senha precisa ter pelo menos 6 caracteres.');
+    if(senha!==$('#aSenha2').value) return erro('As duas senhas não são iguais.');
+  }
+  $('#aBtn').disabled=true; $('#authErr').hidden=true;
+  try{
+    const r=await fetch('/api/'+(modo==='criar'?'cadastro':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,senha})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.token) return erro(j.erro||'Não foi possível entrar. Tente de novo.');
+    tk=j.token; sv('tk',tk); sv('em',j.email);
+    $('#aSenha').value=''; $('#aSenha2').value=''; $('#authMsg').hidden=true;
+    mostrar(true);
+  }catch(err){erro('Sem conexão com a internet. Conecte-se para entrar.')}
+  finally{$('#aBtn').disabled=false}
+});
 if(peso) $('#peso').value=String(peso).replace('.',',');
 if(alt) $('#alt').value=String(alt).replace('.',',');
-render();
+if(tk){mostrar(true);verificar()}else{setModo('entrar');mostrar(false)}
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>

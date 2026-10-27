@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Painel de acessos</title>
+<style>
+:root{--bg:#E6F2E9;--card:#fff;--ink:#1F4A3E;--mut:#4F7366;--g:#2F5D50;--o:#E07A3F;--sage:#D3E7DA;--line:#C9DFD0;--red:#B3261E;--on:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16211D;--card:#1F2D28;--ink:#EDEDE8;--mut:#A9B5AF;--g:#7FC0A9;--o:#F0974F;--sage:#294038;--line:#30433B;--red:#FFB4AB;--on:#10231C}}
+:root[data-theme="dark"]{--bg:#16211D;--card:#1F2D28;--ink:#EDEDE8;--mut:#A9B5AF;--g:#7FC0A9;--o:#F0974F;--sage:#294038;--line:#30433B;--red:#FFB4AB;--on:#10231C}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:24px 16px 48px}
+h1{font:700 26px Georgia,serif;color:var(--g);margin:0 0 4px}
+h2{font:700 18px Georgia,serif;color:var(--g);margin:0 0 10px}
+.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+input{width:100%;box-sizing:border-box;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:var(--g);color:var(--on)}
+button.sec{background:var(--sage);color:var(--ink)}
+button.red{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--o);outline-offset:1px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row input{flex:1;min-width:200px}
+.msg{margin:10px 0 0;font-weight:600}
+.msg.err{color:var(--red)}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.stats span{background:var(--sage);border-radius:10px;padding:6px 10px;font-size:14px}
+.it{border-top:1px solid var(--line);padding:12px 0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.it b{word-break:break-all}
+.it small{display:block;color:var(--mut)}
+.pill{display:inline-block;font-size:12px;font-weight:700;border-radius:20px;padding:2px 8px;margin-left:6px}
+.pill.ativo{background:var(--sage);color:var(--g)}
+.pill.bloqueado{background:#FDE8E6;color:#8A1C14}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.acts button{padding:6px 10px;font-size:14px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Painel de acessos</h1>
+  <p class="sub">Minha Dieta · área só da nutricionista</p>
+
+  <section class="card" id="entrar">
+    <h2>Entrar no painel</h2>
+    <form id="fEntrar" class="row">
+      <input id="senha" type="password" autocomplete="current-password" placeholder="Senha do painel (ADMIN_SENHA)" aria-label="Senha do painel">
+      <button type="submit">Entrar</button>
+    </form>
+    <p class="msg err" id="eEntrar" hidden></p>
+  </section>
+
+  <div id="painel" hidden>
+    <section class="card">
+      <h2>Liberar acesso manualmente</h2>
+      <p class="sub" style="margin-bottom:10px">Use para clientes que compraram fora do Hotmart ou para dar acesso de cortesia. Quem compra pelo Hotmart é liberado sozinho.</p>
+      <form id="fLiberar" class="row">
+        <input id="novo" type="email" placeholder="email@da-cliente.com" aria-label="E-mail para liberar">
+        <button type="submit">Liberar</button>
+      </form>
+      <p class="msg" id="mLiberar" hidden></p>
+    </section>
+
+    <section class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">Clientes</h2><button class="sec" id="atualizar" type="button">Atualizar</button></div>
+      <div class="stats" id="stats" style="margin-top:10px"></div>
+      <input id="filtro" type="search" placeholder="Buscar por e-mail" aria-label="Buscar por e-mail" style="margin-bottom:6px">
+      <div id="lista"></div>
+    </section>
+  </div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+let senha='', dados=[];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const data=s=>s?new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'—';
+async function api(acao,extra={}){
+  const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({senha,acao,...extra})});
+  const j=await r.json().catch(()=>({erro:'Erro no servidor.'}));
+  if(!r.ok) throw new Error(j.erro||'Erro.');
+  return j;
+}
+function desenhar(){
+  const f=$('#filtro').value.trim().toLowerCase(), L=dados.filter(d=>d.email.includes(f));
+  const at=dados.filter(d=>d.status==='ativo').length;
+  $('#stats').innerHTML=`<span>${dados.length} no total</span><span>${at} ativos</span><span>${dados.filter(d=>d.temSenha).length} já criaram senha</span>`;
+  $('#lista').innerHTML=L.length?L.map(d=>`<div class="it"><div><b>${esc(d.email)}</b><span class="pill ${esc(d.status)}">${d.status==='ativo'?'Ativo':'Bloqueado'}</span>
+    <small>${d.origem==='manual'?'Liberado por você':'Hotmart'} · atualizado ${data(d.atualizado)}</small>
+    <small>${d.temSenha?'Senha criada · último login '+data(d.ultimoLogin):'Ainda não criou a senha'}</small></div>
+    <div class="acts">${d.status==='ativo'?`<button class="red" data-a="bloquear" data-e="${esc(d.email)}">Bloquear</button>`:`<button data-a="liberar" data-e="${esc(d.email)}">Liberar</button>`}
+    ${d.temSenha?`<button class="sec" data-a="apagar_senha" data-e="${esc(d.email)}">Apagar senha</button>`:''}</div></div>`).join(''):'<p class="sub">Nenhuma cliente encontrada.</p>';
+}
+async function carregar(){dados=(await api('listar')).lista;desenhar()}
+$('#fEntrar').addEventListener('submit',async e=>{
+  e.preventDefault(); senha=$('#senha').value; $('#eEntrar').hidden=true;
+  try{await carregar();$('#entrar').hidden=true;$('#painel').hidden=false}
+  catch(err){$('#eEntrar').textContent=err.message;$('#eEntrar').hidden=false}
+});
+$('#fLiberar').addEventListener('submit',async e=>{
+  e.preventDefault(); const em=$('#novo').value.trim(), m=$('#mLiberar');
+  try{await api('liberar',{email:em});m.className='msg';m.textContent=em+' liberado. A cliente já pode criar a senha em "Primeiro acesso".';$('#novo').value='';await carregar()}
+  catch(err){m.className='msg err';m.textContent=err.message}
+  m.hidden=false;
+});
+$('#lista').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-a]'); if(!b) return;
+  const a=b.dataset.a, em=b.dataset.e;
+  const pergunta={bloquear:`Bloquear o acesso de ${em}?`,apagar_senha:`Apagar a senha de ${em}? Ela vai criar uma nova em "Primeiro acesso".`}[a];
+  if(pergunta&&!confirm(pergunta)) return;
+  b.disabled=true;
+  try{await api(a,{email:em});await carregar()}catch(err){alert(err.message);b.disabled=false}
+});
+$('#atualizar').addEventListener('click',()=>carregar().catch(err=>alert(err.message)));
+$('#filtro').addEventListener('input',desenhar);
+</script>
+</body>
+</html>
